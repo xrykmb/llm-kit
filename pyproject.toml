@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-kit"
-version = "0.1.0"
-description = "OpenAI-compatible LLM client, chat CLI, and JSONL eval harness."
+version = "0.2.0"
+description = "Modular RAG + CoT toolkit with DeepSeek OpenAI-compatible API."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "llm-kit contributors" }]
-keywords = ["llm", "openai", "eval", "cli"]
+keywords = ["llm", "deepseek", "rag", "cot", "eval"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
