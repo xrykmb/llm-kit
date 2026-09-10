@@ -7,37 +7,49 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
+DEFAULT_MODEL = "deepseek-chat"
+
 
 @dataclass(frozen=True)
 class ChatClient:
     api_key: str = ""
-    base_url: str = "https://api.openai.com/v1"
-    model: str = "gpt-4o-mini"
-    timeout_sec: float = 60.0
+    base_url: str = DEFAULT_BASE_URL
+    model: str = DEFAULT_MODEL
+    timeout_sec: float = 120.0
 
     @classmethod
     def from_env(cls) -> ChatClient:
         return cls(
             api_key=os.environ.get("LLM_API_KEY", ""),
-            base_url=os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
-            model=os.environ.get("LLM_MODEL", "gpt-4o-mini"),
+            base_url=os.environ.get("LLM_BASE_URL", DEFAULT_BASE_URL).rstrip("/"),
+            model=os.environ.get("LLM_MODEL", DEFAULT_MODEL),
         )
 
 
-def chat_completion(
+@dataclass(frozen=True)
+class ChatResult:
+    content: str
+    reasoning: str = ""
+
+
+def complete(
     client: ChatClient,
     messages: list[dict[str, str]],
     *,
-    temperature: float = 0.2,
+    temperature: float | None = 0.2,
     opener: Any = urllib.request.urlopen,
-) -> str:
-    """Call POST /chat/completions and return the first message content."""
+) -> ChatResult:
+    """Call POST /chat/completions (DeepSeek OpenAI-compatible)."""
     url = f"{client.base_url.rstrip('/')}/chat/completions"
-    payload = {
+    payload: dict[str, Any] = {
         "model": client.model,
         "messages": messages,
-        "temperature": temperature,
     }
+    # deepseek-reasoner rejects custom temperature
+    if temperature is not None and "reasoner" not in client.model:
+        payload["temperature"] = temperature
+
     headers = {"Content-Type": "application/json"}
     if client.api_key:
         headers["Authorization"] = f"Bearer {client.api_key}"
@@ -57,9 +69,21 @@ def chat_completion(
 
     data = json.loads(raw)
     try:
-        content = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        content = message.get("content") or ""
+        reasoning = message.get("reasoning_content") or ""
     except (KeyError, IndexError, TypeError) as exc:
         raise RuntimeError(f"Unexpected LLM response: {data!r}") from exc
-    if not isinstance(content, str):
-        raise RuntimeError(f"Unexpected content type: {type(content)}")
-    return content
+    if not isinstance(content, str) or not isinstance(reasoning, str):
+        raise RuntimeError(f"Unexpected content types in: {message!r}")
+    return ChatResult(content=content, reasoning=reasoning)
+
+
+def chat_completion(
+    client: ChatClient,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float | None = 0.2,
+    opener: Any = urllib.request.urlopen,
+) -> str:
+    return complete(client, messages, temperature=temperature, opener=opener).content
