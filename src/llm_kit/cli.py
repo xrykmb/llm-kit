@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_cmd.add_argument("--index", default=".llm-kit/index.json", help="Index JSON path")
     ingest_cmd.add_argument("--size", type=int, default=400, help="Chunk size in characters")
     ingest_cmd.add_argument("--overlap", type=int, default=80, help="Chunk overlap")
+    ingest_cmd.add_argument("--mmr-lambda", type=float, default=0.7, help="MMR λ (relevance vs diversity)")
 
     rag = sub.add_parser("rag", help="Retrieve then answer with CoT on DeepSeek")
     rag.add_argument("question", help="User question")
@@ -55,7 +56,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "ingest":
-        count = ingest([Path(args.path)], Path(args.index), size=args.size, overlap=args.overlap)
+        count = ingest(
+            [Path(args.path)],
+            Path(args.index),
+            size=args.size,
+            overlap=args.overlap,
+            mmr_lambda=args.mmr_lambda,
+        )
         print(f"llm-kit ingest: {count} chunks -> {args.index}")
         return 0 if count else 1
 
