@@ -54,10 +54,33 @@ llm-kit ingest examples/kb
 llm-kit rag "这个知识库里 RAG 怎么工作？" --show-reasoning
 ```
 
-## 聊天 / 评测
+## 多轮对话 / 流式输出
+
+默认流式打印 token。不带参数进入 REPL（历史会保留，可用 `/exit` `/reset` `/save`）。
 
 ```bash
-llm-kit chat "用一句话解释 RAG"
+llm-kit chat
+llm-kit chat "用一句话解释 RAG" --show-reasoning
+llm-kit chat "你好" --no-stream --session .llm-kit/chat.json
+llm-kit rag
+llm-kit rag "这个知识库里 RAG 怎么工作？" --show-reasoning
+```
+
+库用法：
+
+```python
+from llm_kit import ChatClient, Conversation, collect_stream
+
+client = ChatClient.from_env()
+convo = Conversation(system="你是助手", max_turns=8)
+convo.add_user("1+1？")
+result = collect_stream(client, convo.to_api_messages(), on_event=lambda e: print(e.text, end=""))
+convo.add_assistant(result.content)
+```
+
+## 评测
+
+```bash
 llm-kit eval examples/eval.jsonl
 ```
 
