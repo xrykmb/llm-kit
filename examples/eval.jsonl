@@ -1,0 +1,2 @@
+{"id": "rag-name", "prompt": "What does RAG stand for in LLM applications? Answer in English.", "expect_contains": ["Retrieval"]}
+{"id": "json-ok", "system": "Reply with valid JSON only.", "prompt": "Return {\"status\": \"ok\"}", "expect_contains": ["status"]}
