@@ -43,7 +43,7 @@ def test_cli_ingest_then_rag(tmp_path: Path, monkeypatch, capsys) -> None:
 
     monkeypatch.setattr(
         "llm_kit.cli.ask",
-        lambda question, index_path, client, k=4, cot=True: type(
+        lambda *args, **kwargs: type(
             "A",
             (),
             {
