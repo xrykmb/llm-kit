@@ -6,7 +6,7 @@
 
 1. 加载文档（txt / markdown）。
 2. 切成带重叠的文本块。
-3. 用检索器找出和问题最相关的块。本仓库默认用 TF-IDF，不依赖向量数据库。
+3. 用混合检索（稠密余弦 + BM25，RRF 融合，MMR 去重）找出相关块。未配置 embedding API 时用本地 hashing 向量。
 4. 把检索到的块放进提示词，交给 DeepSeek 生成。
 5. 可选 Chain-of-Thought：先逐步推理，再给出「最终答案」。
 
