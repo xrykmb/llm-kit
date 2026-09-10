@@ -1,8 +1,8 @@
 # llm-kit
 
-面向大模型应用的小型工具包：用 **OpenAI 兼容** HTTP 接口发聊天请求，并在 JSONL 上做简单评测。
+模块化 **RAG + Chain-of-Thought**，默认对接 **DeepSeek** 的 OpenAI 兼容接口。
 
-适用于 OpenAI、DeepSeek、通义兼容模式、本地 vLLM / Ollama（OpenAI 接口）等。
+检索层是可替换的 TF-IDF（无向量库依赖）；生成层走 DeepSeek Chat，可用 CoT 提示，也兼容 `deepseek-reasoner` 的 `reasoning_content`。
 
 ## 安装
 
@@ -10,48 +10,69 @@
 python -m pip install -e ".[dev]"
 ```
 
-Python 3.10+，无第三方运行时依赖。
+## 配置（DeepSeek）
 
-## 配置
+到 [DeepSeek 开放平台](https://platform.deepseek.com/) 申请 API Key。
 
-环境变量：
+```powershell
+$env:LLM_API_KEY="sk-..."
+$env:LLM_BASE_URL="https://api.deepseek.com/v1"
+$env:LLM_MODEL="deepseek-chat"
+```
 
-| 变量 | 含义 | 默认 |
-|------|------|------|
-| `LLM_API_KEY` | API Key | 空（部分本地服务可不填） |
-| `LLM_BASE_URL` | 接口根路径 | `https://api.openai.com/v1` |
-| `LLM_MODEL` | 模型名 | `gpt-4o-mini` |
+更强推理可改成：
+
+```powershell
+$env:LLM_MODEL="deepseek-reasoner"
+```
+
+| 变量 | 默认 |
+|------|------|
+| `LLM_API_KEY` | 空 |
+| `LLM_BASE_URL` | `https://api.deepseek.com/v1` |
+| `LLM_MODEL` | `deepseek-chat` |
+
+## RAG 流程
+
+`load` → `chunk` → `TfIdfRetriever` → `CoT prompt` → `DeepSeek`
+
+```bash
+llm-kit ingest examples/kb
+llm-kit rag "这个知识库里 RAG 怎么工作？" --show-reasoning
+```
+
+关闭 CoT：
+
+```bash
+llm-kit rag "问题" --no-cot
+```
 
 ## 聊天
 
 ```bash
-llm-kit chat "用一句话解释什么是 RAG"
-llm-kit chat --system "你是严谨的助手" "列出 3 条评测指标"
+llm-kit chat "用一句话解释 RAG"
+llm-kit chat --show-reasoning "逐步说明检索为什么能减少幻觉"
 ```
 
 ## 评测
 
-`examples/eval.jsonl` 每行一个用例：
-
-```json
-{"id": "rag-1", "prompt": "RAG 的全称是什么？", "expect_contains": ["Retrieval"]}
-```
-
 ```bash
 llm-kit eval examples/eval.jsonl
-llm-kit eval examples/eval.jsonl --json
 ```
 
-评测只做 **子串包含** 检查，用来快速回归提示词或网关，不是学术基准。
-
-## 作为库使用
+## 作为库
 
 ```python
-from llm_kit import ChatClient, chat_completion, evaluate_jsonl
+from pathlib import Path
+from llm_kit import ChatClient, ingest, ask
 
-client = ChatClient()
-text = chat_completion(client, messages=[{"role": "user", "content": "hi"}])
+index = Path(".llm-kit/index.json")
+ingest([Path("examples/kb")], index)
+answer = ask("RAG 分哪几步？", index, ChatClient.from_env(), cot=True)
+print(answer.answer)
 ```
+
+替换检索器：实现与 `TfIdfRetriever` 相同的 `add` / `search`，再接到 `rag.pipeline`。
 
 ## 开发
 
