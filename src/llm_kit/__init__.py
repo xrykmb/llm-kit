@@ -1,13 +1,23 @@
-"""OpenAI-compatible LLM client and JSONL eval helpers."""
+"""DeepSeek RAG + CoT toolkit."""
 
-from .client import ChatClient, chat_completion
+from .client import ChatClient, ChatResult, chat_completion, complete
+from .cot import build_rag_messages, extract_final_answer
 from .eval import EvalCase, EvalResult, evaluate_jsonl
+from .rag import RagAnswer, TfIdfRetriever, ask, ingest
 
 __all__ = [
     "ChatClient",
+    "ChatResult",
     "EvalCase",
     "EvalResult",
+    "RagAnswer",
+    "TfIdfRetriever",
+    "ask",
+    "build_rag_messages",
     "chat_completion",
+    "complete",
     "evaluate_jsonl",
+    "extract_final_answer",
+    "ingest",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
